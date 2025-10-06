@@ -4,12 +4,13 @@ on:
   workflow_dispatch:
     inputs:
       jmx_file:
-        description: 'The JMeter .jmx file to run (e.g., performance-test.jmx)'
+        description: 'The JMeter .jmx file to run'
         required: true
         type: choice
         options:
-          - jmeter-scripts/LoadTesting.jmx
-        default: 'jmeter-scripts/LoadTesting.jmx'
+          - jmeter-scripts/performance-test.jmx
+          - jmeter-scripts/LoadTesting.jmx # Assuming this is your file
+        default: 'jmeter-scripts/performance-test.jmx'
 
 jobs:
   run_jmeter_test:
@@ -32,37 +33,51 @@ jobs:
       - name: Get JMX file name
         id: jmx_name
         run: |
-          # Use bash parameter expansion to remove the path and extension
           jmx_path_and_name="${{ inputs.jmx_file }}"
           jmx_filename="${jmx_path_and_name##*/}"
           jmx_basename="${jmx_filename%.jmx}"
           echo "JMX_BASENAME=$jmx_basename" >> $GITHUB_ENV
+
+      # Step 4: Install JMeter Plugins
+      # Installs the Ultimate Thread Group plugin before running the test
+      - name: Install JMeter Plugins
+        run: |
+          JMETER_PLUGINS_VERSION="2.10"
+          # Download the JMeter Plugins Manager
+          curl -L --silent https://repo1.maven.org/maven2/kg/apc/jmeter-plugins-manager/${JMETER_PLUGINS_VERSION}/jmeter-plugins-manager-${JMETER_PLUGINS_VERSION}.jar -o /tmp/plugins-manager.jar
           
-      # Step 4: Generate a dynamic timestamp
+          # Use a temporary JMeter container to install plugins
+          docker run --rm \
+            -v /tmp/plugins-manager.jar:/jmeter/lib/ext/jmeter-plugins-manager.jar \
+            -v ${{ github.workspace }}:/jmeter/workspace \
+            justb4/jmeter:5.6.3 \
+            /jmeter/lib/ext/plugins-manager.jar install jpgc-casutg jpgc-standard
+          
+      # Step 5: Generate a dynamic timestamp
       - name: Set dynamic timestamp
         id: timestamp_step
         run: echo "TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
 
-      # Step 5: Run the JMeter test with Docker
+      # Step 6: Run the JMeter test with Docker
       - name: Run JMeter test with dynamic filenames
         run: |
           docker run --rm \
-            -v ${{ github.workspace }}:/jmeter \
-            -w /jmeter \
-            justb4/jmeter:latest \
+            -v ${{ github.workspace }}:/jmeter/workspace \
+            -w /jmeter/workspace \
+            justb4/jmeter:5.6.3 \
             -n -t "${{ inputs.jmx_file }}" \
             -l "jmeter-results/report-${{ env.JMX_BASENAME }}-${{ env.TIMESTAMP }}.jtl" \
             -e -o "jmeter-report-${{ env.JMX_BASENAME }}-${{ env.TIMESTAMP }}"
 
-      # Step 6: Upload the dynamic test results file as an artifact
+      # Step 7: Upload the dynamic test results file as an artifact
       - name: Upload JMeter Results File
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: jmeter-results-${{ env.JMX_BASENAME }}-${{ env.TIMESTAMP }}
           path: jmeter-results/report-${{ env.JMX_BASENAME }}-${{ env.TIMESTAMP }}.jtl
-          
-      # Step 7: Upload the dynamic HTML report as an artifact
+
+      # Step 8: Upload the dynamic HTML report as an artifact
       - name: Upload JMeter HTML Report
         if: always()
         uses: actions/upload-artifact@v4
