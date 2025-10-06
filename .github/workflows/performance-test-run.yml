@@ -9,7 +9,7 @@ on:
         type: choice
         options:
           - jmeter-scripts/performance-test.jmx
-          - jmeter-scripts/LoadTesting.jmx # Assuming this is your file
+          - jmeter-scripts/LoadTesting.jmx
         default: 'jmeter-scripts/performance-test.jmx'
 
 jobs:
@@ -29,43 +29,43 @@ jobs:
           distribution: 'temurin'
           java-version: '17'
 
-      # Step 3: Extract the base name of the .jmx file
+      # Step 3: Install JMeter and the Plugins
+      - name: Install JMeter and Plugins
+        run: |
+          JMETER_VERSION="5.6.3"
+          JMETER_DIR="apache-jmeter-${JMETER_VERSION}"
+
+          # Download and extract JMeter
+          curl -L --silent https://archive.apache.org/dist/jmeter/binaries/${JMETER_DIR}.tgz -o ${JMETER_DIR}.tgz
+          sudo tar -xvf ${JMETER_DIR}.tgz
+          
+          # Download Plugins Manager
+          PLUGINS_MANAGER_VERSION="2.10"
+          curl -L --silent https://repo1.maven.org/maven2/kg/apc/jmeter-plugins-manager/${PLUGINS_MANAGER_VERSION}/jmeter-plugins-manager-${PLUGINS_MANAGER_VERSION}.jar -o ${JMETER_DIR}/lib/ext/jmeter-plugins-manager.jar
+          
+          # Download Command Line Runner required by the Plugins Manager CLI
+          CMDRUNNER_VERSION="2.2.1"
+          curl -L --silent https://repo1.maven.org/maven2/kg/apc/cmdrunner/${CMDRUNNER_VERSION}/cmdrunner-${CMDRUNNER_VERSION}.jar -o ${JMETER_DIR}/lib/cmdrunner.jar
+          
+          # Install the Ultimate Thread Group and Standard plugins using the CLI
+          java -jar ${JMETER_DIR}/lib/cmdrunner.jar --tool org.jmeterplugins.repository.PluginManagerCMD install jpgc-casutg,jpgc-standard
+
+      # Step 4: Extract the base name of the .jmx file
       - name: Get JMX file name
         id: jmx_name
-        run: |
-          jmx_path_and_name="${{ inputs.jmx_file }}"
-          jmx_filename="${jmx_path_and_name##*/}"
-          jmx_basename="${jmx_filename%.jmx}"
-          echo "JMX_BASENAME=$jmx_basename" >> $GITHUB_ENV
+        run: echo "JMX_BASENAME=$(basename "${{ inputs.jmx_file }}" .jmx)" >> $GITHUB_ENV
 
-      # Step 4: Install JMeter Plugins
-      # Installs the Ultimate Thread Group plugin before running the test
-      - name: Install JMeter Plugins
-        run: |
-          JMETER_PLUGINS_VERSION="2.10"
-          # Download the JMeter Plugins Manager
-          curl -L --silent https://repo1.maven.org/maven2/kg/apc/jmeter-plugins-manager/${JMETER_PLUGINS_VERSION}/jmeter-plugins-manager-${JMETER_PLUGINS_VERSION}.jar -o /tmp/plugins-manager.jar
-          
-          # Use a temporary JMeter container to install plugins
-          docker run --rm \
-            -v /tmp/plugins-manager.jar:/jmeter/lib/ext/jmeter-plugins-manager.jar \
-            -v ${{ github.workspace }}:/jmeter/workspace \
-            justb4/jmeter:5.6.3 \
-            /jmeter/lib/ext/plugins-manager.jar install jpgc-casutg jpgc-standard
-          
       # Step 5: Generate a dynamic timestamp
       - name: Set dynamic timestamp
         id: timestamp_step
         run: echo "TIMESTAMP=$(date +'%Y-%m-%d_%H-%M-%S')" >> $GITHUB_ENV
 
-      # Step 6: Run the JMeter test with Docker
-      - name: Run JMeter test with dynamic filenames
+      # Step 6: Run the JMeter test
+      - name: Run JMeter test
         run: |
-          docker run --rm \
-            -v ${{ github.workspace }}:/jmeter/workspace \
-            -w /jmeter/workspace \
-            justb4/jmeter:5.6.3 \
-            -n -t "${{ inputs.jmx_file }}" \
+          JMETER_DIR="apache-jmeter-5.6.3"
+          ./${JMETER_DIR}/bin/jmeter -n \
+            -t "${{ inputs.jmx_file }}" \
             -l "jmeter-results/report-${{ env.JMX_BASENAME }}-${{ env.TIMESTAMP }}.jtl" \
             -e -o "jmeter-report-${{ env.JMX_BASENAME }}-${{ env.TIMESTAMP }}"
 
