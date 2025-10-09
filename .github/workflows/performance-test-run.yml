@@ -21,16 +21,9 @@ jobs:
       - name: Prepare Dynamic Filename
         id: prep
         run: |
-          # Get the current timestamp and format it
           TIMESTAMP=$(date +'%Y-%m-%d-%H-%M-%S')
-          
-          # Extract the filename from the input path and remove the extension
           FILENAME=$(basename "${{ inputs.jmxFile }}" .jmx)
-          
-          # Combine the filename and timestamp for the report
           REPORT_NAME="${FILENAME}-${TIMESTAMP}"
-          
-          # Set the environment variable
           echo "REPORT_NAME=${REPORT_NAME}" >> "$GITHUB_ENV"
 
       - name: Run JMeter Tests and Generate HTML Report
@@ -39,7 +32,6 @@ jobs:
           testFilePath: ${{ inputs.jmxFile }}
           outputReportsFolder: reports/
           args: >
-            -l reports/${{ env.REPORT_NAME }}.jtl
             -e -o reports/${{ env.REPORT_NAME }}_dashboard
             --loglevel INFO 
             -JMyProperty=Value
