@@ -25,7 +25,7 @@ jobs:
           TIMESTAMP=$(date +'%Y-%m-%d-%H-%M-%S')
           
           # Extract the filename from the input path and remove the extension
-          FILENAME=$(basename "${{ inputs.testFile }}" .jmx)
+          FILENAME=$(basename "${{ inputs.jmxFile }}" .jmx)
           
           # Combine the filename and timestamp for the report
           REPORT_NAME="${FILENAME}-${TIMESTAMP}"
@@ -36,7 +36,7 @@ jobs:
       - name: Run JMeter Tests and Generate HTML Report
         uses: rbhadti94/apache-jmeter-action@v0.5.0
         with:
-          testFilePath: ${{ inputs.testFile }}
+          testFilePath: ${{ inputs.jmxFile }}
           outputReportsFolder: reports/
           args: >
             -n 
