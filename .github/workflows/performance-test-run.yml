@@ -31,11 +31,6 @@ jobs:
         with:
           testFilePath: ${{ inputs.jmxFile }}
           outputReportsFolder: reports/
-          args: >
-            -e -o reports/${{ env.REPORT_NAME }}_dashboard
-            --loglevel INFO 
-            -JMyProperty=Value
-            --jmeterlogconf=log.conf
           plugins: "jpgc-casutg"
 
       - name: Upload JMeter JTL Report
