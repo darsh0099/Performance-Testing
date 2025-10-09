@@ -33,18 +33,30 @@ jobs:
           # Set the environment variable
           echo "REPORT_NAME=${REPORT_NAME}" >> "$GITHUB_ENV"
 
-      - name: Run JMeter Tests
+      - name: Run JMeter Tests and Generate HTML Report
         uses: rbhadti94/apache-jmeter-action@v0.5.0
         with:
           testFilePath: ${{ inputs.testFile }}
           outputReportsFolder: reports/
-          # Use the environment variable to specify the results file
-          args: "-l reports/${{ env.REPORT_NAME }}.jtl --loglevel INFO -JMyProperty=Value --jmeterlogconf=log.conf"
+          args: >
+            -n 
+            -l reports/${{ env.REPORT_NAME }}.jtl
+            -e -o reports/${{ env.REPORT_NAME }}_dashboard
+            --loglevel INFO 
+            -JMyProperty=Value
+            --jmeterlogconf=log.conf
           plugins: "jpgc-casutg"
 
-      - name: Upload JMeter Test Reports
+      - name: Upload JMeter JTL Report
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: jmeter-reports
-          path: reports/
+          name: jmeter-jtl-report
+          path: reports/${{ env.REPORT_NAME }}.jtl
+          
+      - name: Upload JMeter HTML Dashboard
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: jmeter-html-dashboard
+          path: reports/${{ env.REPORT_NAME }}_dashboard/
