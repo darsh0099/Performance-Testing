@@ -8,8 +8,9 @@ on:
         required: true
         type: choice
         options:
-          - jmeter-scripts/LoadTesting.jmx
-        default: 'jmeter-scripts/performance-test.jmx'
+          - jmeter-scripts/LoadTestingUsingUTG.jmx
+          - jmeter-scripts/LoadTestingUsingNTG.jmx
+        default: 'jmeter-scripts/LoadTestingUsingNTG.jmx'
 
 jobs:
   jmeter-tests:
