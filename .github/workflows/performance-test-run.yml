@@ -39,7 +39,6 @@ jobs:
           testFilePath: ${{ inputs.jmxFile }}
           outputReportsFolder: reports/
           args: >
-            -n 
             -l reports/${{ env.REPORT_NAME }}.jtl
             -e -o reports/${{ env.REPORT_NAME }}_dashboard
             --loglevel INFO 
