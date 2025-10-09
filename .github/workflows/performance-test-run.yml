@@ -9,7 +9,7 @@ on:
         type: choice
         options:
           - jmeter-scripts/LoadTesting.jmx
-        default: 'jmeter-scripts/LoadTesting.jmx'
+        default: 'jmeter-scripts/performance-test.jmx'
 
 jobs:
   jmeter-tests:
